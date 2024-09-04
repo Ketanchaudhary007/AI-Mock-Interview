@@ -8,7 +8,7 @@ const HeroSection = () => {
     <>
       <div className="bg-gray-950 p-6 md:p-12 flex flex-col md:flex-row gap-7 ">
         <Image
-          src="/interview.jpg"
+          src="/interview.png"
           alt="myInterviewImage"
           width={300}
           height={300} // Maintain the correct aspect ratio
