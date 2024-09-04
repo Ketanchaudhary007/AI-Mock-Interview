@@ -1,18 +1,22 @@
 import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 const HeroSection = () => {
   return (
     <>
       <div className="bg-gray-950 p-6 md:p-12 flex flex-col md:flex-row gap-7 ">
-        <img
-          src="interview.jpg"
+        <Image
+          src="/interview.jpg"
           alt="myInterviewImage"
-          className="w-[300px] rounded-xl"
+          width={300}
+          height={300} // Maintain the correct aspect ratio
+          className="rounded-xl"
           style={{
-            //boxShadow: "0px 0px 43px -12px rgba(216, 216, 221, 1)",
+            // boxShadow: "0px 0px 43px -12px rgba(216, 216, 221, 1)",
           }}
+        
         />
         <div className="w-full rounded-xl p-4 md:p-8">
           <h2 className="text-white text-[22px] md:text-[35px] font-extrabold">
@@ -23,7 +27,7 @@ const HeroSection = () => {
           </label>
           <p className="text-cyan-100 w-full md:w-[700px] mt-6">
             The power of AI to transform your career growth with AI-driven mock
-            interviews and personalized feedback. 
+            interviews and personalized feedback.
           </p>
           <div className="flex flex-col sm:flex-row gap-2 my-7">
             <Link href="/dashboard">
@@ -37,7 +41,7 @@ const HeroSection = () => {
                 />
               </Button>
             </Link>
-            
+
           </div>
         </div>
       </div>
