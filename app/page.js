@@ -1,12 +1,17 @@
 
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
-
+import Header from "./dashboard/_components/Header";
+import HeroSection from "./dashboard/_components/HeroSection";
+import HomeStats from "./dashboard/_components/HomeStats"
+import Footer from "./dashboard/_components/Footer";
 export default function Home() {
   return (
-    <div>
-      <h2>hey</h2>
-      <Button>meow</Button>
-    </div>
+  <>
+  <div>
+    <Header/>
+    <HeroSection/>
+    <HomeStats/>
+    {<Footer/>}
+  </div>
+  </>  
   );
 }

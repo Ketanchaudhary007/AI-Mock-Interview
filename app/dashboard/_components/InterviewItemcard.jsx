@@ -12,7 +12,7 @@ const InterviewItemCard = ({ interview }) => {
     }
   return (
     <div className="border shadow-sm rounded-sm p-3">
-      <h2 className="font-bold text-primary">{interview?.jobPosition}</h2>
+      <h2 className="font-bold text-cyan-500">{interview?.jobPosition}</h2>
       <h2 className="text-sm text-gray-500">{interview?.jobExperience}</h2>
       <h2 className="text-xs text-gray-400">
         Created At: {interview?.createdAt}
