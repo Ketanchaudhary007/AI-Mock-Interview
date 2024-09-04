@@ -67,8 +67,12 @@ const RecordAnswerSection = ({
       `Question: ${mockInterviewQuestion[activeQuestionIndex]?.question}, ` +
       `User Answer: ${userAnswer}, ` +
       "Depends on question and user answer for given interview question " +
-      "please give a rating for the answer and feedback as area of improvement if any " +
+      "please give a rating as number out of 10 for the answer and feedback as area of improvement if any " +
       "in just 3 to 5 lines in JSON format with rating field and feedback field.";
+
+
+ 
+
 
     console.log("Feedback Prompt:", feedbackPrompt);
 
