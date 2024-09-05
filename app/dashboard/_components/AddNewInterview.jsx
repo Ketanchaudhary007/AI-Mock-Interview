@@ -33,20 +33,23 @@ function AddNewInterview() {
     const onSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-
+    
         const inputPrompt = `Job Position: ${jobPosition}, Job Description: ${jobDesc}, Years of Experience: ${jobExperience}, Depends on this information please give me ${process.env.NEXT_PUBLIC_INTERVIEW_QUESTION_COUNT} interview questions with answers in JSON format. Give questions and answers as fields in JSON.`;
-
+    
         try {
             const result = await chatSession.sendMessage(inputPrompt);
             const responseText = await result.response.text();
+            console.log("Raw response text:", responseText); // Debug log
+    
             const mockJsonResp = responseText
-                .replace(/```json|```/g, ""); // Use regex to remove all code block markers
-
+                .replace(/```json|```/g, "") // Remove code block markers
+                .trim(); // Additional trimming
+    
             try {
                 const parsedJsonResp = JSON.parse(mockJsonResp);
                 console.log("Parsed JSON Response:", parsedJsonResp);
                 setJsonResponse(parsedJsonResp);
-
+    
                 if (parsedJsonResp) {
                     const resp = await db.insert(MockInterview)
                         .values({
@@ -59,7 +62,7 @@ function AddNewInterview() {
                             createdAt: moment().format('DD-MM-YYYY'),
                         })
                         .returning({ mockId: MockInterview.mockId });
-
+    
                     console.log("Inserted ID:", resp);
                     if (resp) {
                         setOpenDialog(false);
@@ -70,6 +73,7 @@ function AddNewInterview() {
                 }
             } catch (parseError) {
                 console.error("Error parsing JSON response:", parseError);
+                console.error("Response causing the error:", mockJsonResp); // Log the problematic response
                 toast("Failed to parse response. Please try again.");
             }
         } catch (error) {
@@ -79,6 +83,7 @@ function AddNewInterview() {
             setLoading(false);
         }
     };
+    
 
     return (
         <div>
