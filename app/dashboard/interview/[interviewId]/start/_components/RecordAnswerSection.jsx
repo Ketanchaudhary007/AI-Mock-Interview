@@ -11,6 +11,9 @@ import { db } from "@/utils/db";
 import { UserAnswer } from "@/utils/schema";
 import { useUser } from "@clerk/nextjs";
 import moment from "moment";
+import _ from "lodash"; // for throttling
+
+const MIN_ANSWER_LENGTH = 3; // Minimum answer length for saving
 
 const RecordAnswerSection = ({
   mockInterviewQuestion,
@@ -20,6 +23,8 @@ const RecordAnswerSection = ({
   const [userAnswer, setUserAnswer] = useState("");
   const { user } = useUser();
   const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false); // New state variable to track saving status
+
   const {
     error,
     interimResult,
@@ -33,81 +38,83 @@ const RecordAnswerSection = ({
     useLegacyResults: false,
   });
 
+  // Use the final result to update userAnswer
   useEffect(() => {
     if (results.length) {
-      setUserAnswer(prevAns => prevAns + results.map(result => result?.transcript).join(''));
+      const latestResult = results[results.length - 1].transcript;
+      setUserAnswer(latestResult);
     }
   }, [results]);
 
+  // Display interim results temporarily
   useEffect(() => {
-    if (!isRecording && userAnswer.length > 10) {
-      console.log("Stopping recording and updating answer:", userAnswer);
-      UpdateUserAnswer();
+    if (isRecording && interimResult) {
+      setUserAnswer(interimResult); // Show interim result while recording
     }
-  }, [isRecording]);
+  }, [interimResult, isRecording]);
 
-  const StartStopRecording = () => {
-    console.log("Current recording state:", isRecording);
-    if (isRecording) {
-      stopSpeechToText();
-      if (userAnswer.length < 10) {
-        setLoading(false);
-        console.log("Answer too short, not saving");
-      }
-    } else {
-      startSpeechToText();
-    }
-  };
-
+  // Function to update user answer
   const UpdateUserAnswer = async () => {
-    console.log("Updating user answer:", userAnswer);
+    if (isSaving) return; // Prevent multiple submissions
+    setIsSaving(true); // Set saving status
+
+    console.log(userAnswer);
     setLoading(true);
-
     const feedbackPrompt =
-      `Question: ${mockInterviewQuestion[activeQuestionIndex]?.question}, ` +
-      `User Answer: ${userAnswer}, ` +
-      "Depends on question and user answer for given interview question " +
-      "please give a rating as number out of 10 for the answer and feedback as area of improvement if any " +
-      "in just 3 to 5 lines in JSON format with rating field and feedback field.";
-
-
- 
-
-
-    console.log("Feedback Prompt:", feedbackPrompt);
+      "Question: " +
+      mockInterviewQuestion[activeQuestionIndex]?.question +
+      ", User Answer: " +
+      userAnswer +
+      " ,Depends on question and user answer for give interview question" +
+      " please give us rating for answer and feedback as area of improvement" +
+      " in just 3 to 5 lines to improve it in JSON format with rating field and feedback field ";
 
     try {
       const result = await chatSession.sendMessage(feedbackPrompt);
-      const mockJsonResp = await result.response.text();
-      console.log("API Response:", mockJsonResp);
-
-      const formattedJsonResp = mockJsonResp
-        .replace("```json", "")
-        .replace("```", "");
-
-      console.log("Formatted JSON Response:", formattedJsonResp);
-
-      const JsonfeedbackResp = JSON.parse(formattedJsonResp);
+      const mockJsonResp = await result.response.text().replace("```json", "").replace("```", "");
+      console.log(mockJsonResp);
+      const JsonFeedbackResp = JSON.parse(mockJsonResp);
 
       await db.insert(UserAnswer).values({
         mockIdRef: interviewData?.mockId,
         question: mockInterviewQuestion[activeQuestionIndex]?.question,
         correctAns: mockInterviewQuestion[activeQuestionIndex]?.answer,
         userAns: userAnswer,
-        feedback: JsonfeedbackResp?.feedback,
-        rating: JsonfeedbackResp?.rating,
+        feedback: JsonFeedbackResp?.feedback,
+        rating: JsonFeedbackResp?.rating,
         userEmail: user?.primaryEmailAddress?.emailAddress,
         createdAt: moment().format("DD-MM-YYYY"),
       });
 
-      toast("User Answer recorded successfully");
+      toast("User Answer Recorded successfully.");
       setUserAnswer("");
       setResults([]);
-    } catch (err) {
-      console.error("Error updating user answer:", err);
+    } catch (error) {
+      console.error("Error updating user answer:", error);
       toast("Error while saving your answer, please try again.");
     } finally {
       setLoading(false);
+      setIsSaving(false); // Reset saving status
+    }
+  };
+
+  // Stop recording and update answer if recording is off and answer is sufficient
+  useEffect(() => {
+    if (!isRecording && userAnswer.length > MIN_ANSWER_LENGTH) {
+      UpdateUserAnswer();
+    }
+  }, [isRecording, userAnswer]); // Remove isSaving from dependencies to prevent re-triggering
+
+  // Function to start/stop recording
+  const StartStopRecording = () => {
+    if (isRecording) {
+      stopSpeechToText();
+      if (userAnswer.length < MIN_ANSWER_LENGTH) {
+        setLoading(false);
+        console.log("Answer too short, not saving");
+      }
+    } else {
+      startSpeechToText();
     }
   };
 
@@ -129,10 +136,11 @@ const RecordAnswerSection = ({
           mirrored={true}
         />
       </div>
+
       <Button
         disabled={loading}
         variant="outline"
-        className="my-10"
+        className="my-0.1" // Adjusted spacing
         onClick={StartStopRecording}
       >
         {isRecording ? (
@@ -145,8 +153,13 @@ const RecordAnswerSection = ({
           </h2>
         )}
       </Button>
-      {/* Uncomment below line to show the user answer */}
-      {/*<Button onClick={() => console.log("User Answer:", userAnswer)}>Show User Answer</Button>*/ }
+
+      {userAnswer && (
+        <div className="mt-2 text-center">
+          <h3>Your Answer:</h3>
+          <p>{userAnswer}</p>
+        </div>
+      )}
     </div>
   );
 };
