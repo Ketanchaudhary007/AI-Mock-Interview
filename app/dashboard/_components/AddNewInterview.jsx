@@ -32,46 +32,45 @@ function AddNewInterview() {
   const onSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
-    const inputPrompt = `Job position: ${jobPosition}, Job Description: ${jobDescription}, Years of Experience: ${jobExperience}, Please provide ${process.env.NEXT_PUBLIC_INTERVIEW_QUESTION_COUNT} interview questions and answers in JSON format. Each entry should look like this: {"question": "Your question here", "answer": "Your answer here"}`;
-
+  
+    const inputPrompt = `Job position: ${jobPosition}, Job Description: ${jobDescription}, Years of Experience: ${jobExperience}. Based on this information, please provide ${process.env.NEXT_PUBLIC_INTERVIEW_QUESTION_COUNT} interview questions with answers in JSON format, structured as:
+    [
+      {
+        "question": "Your question here",
+        "answer": "Your answer here"
+      },
+      ...
+    ]`;
+  
     try {
       const result = await chatSession.sendMessage(inputPrompt);
       const responseText = await result.response.text();
-      console.log("🚀 ~ Raw Response Text:", responseText); // Log the raw response
-
-      // Use a regular expression to extract the JSON array
-      const jsonMatch = responseText.match(/\[.*?\]/s);
-      if (!jsonMatch || jsonMatch.length === 0) {
+  
+      // Extract JSON array
+      const jsonMatch = responseText.match(/\[(\s*{.*?}\s*,?)*\]/s);
+      if (!jsonMatch) {
         throw new Error("No valid JSON array found in the response");
       }
-
-      const jsonResponsePart = jsonMatch[0].trim(); // Ensure the string is trimmed
-      console.log("🚀 ~ Extracted JSON Part:", jsonResponsePart); // Log the extracted JSON
-
-      // Parse the JSON and handle any errors
-      let mockResponse;
-      try {
-        mockResponse = JSON.parse(jsonResponsePart);
-        console.log("🚀 ~ Parsed Mock Response:", mockResponse);
-        setJsonResponse(mockResponse);
-      } catch (jsonError) {
-        throw new Error("Error parsing JSON: " + jsonError.message);
-      }
-
-      // Insert into the database
+  
+      const jsonResponsePart = jsonMatch[0];
+      const mockResponse = JSON.parse(jsonResponsePart.trim());
+      setJsonResponse(mockResponse);
+  
+      // Define createdByWho value, defaulting to "unknown" if user email is unavailable
+      const createdByWho = user?.primaryEmailAddress?.emailAddress || "unknown";
+  
+      // Save to database
       const jsonString = JSON.stringify(mockResponse);
       const res = await db.insert(MockInterview).values({
         mockId: uuidv4(),
         jsonMockResp: jsonString,
-        jobPosition,
+        jobPosition: jobPosition,
         jobDesc: jobDescription,
-        jobExperience,
-        createdByWho: user?.primaryEmailAddress?.emailAddress,
-        createdAt: moment().format("DD-MM-YYYY"),
+        jobExperience: jobExperience,
+        createdByWho: createdByWho,
+        createdAt: moment().format('DD-MM-YYYY'),
       }).returning({ mockId: MockInterview.mockId });
-
-      // Redirect to the new interview page
+  
       router.push(`dashboard/interview/${res[0]?.mockId}`);
     } catch (error) {
       console.error("Error fetching interview questions:", error);
@@ -79,7 +78,8 @@ function AddNewInterview() {
       setLoading(false);
     }
   };
-
+  
+  
   return (
     <div>
       <div
