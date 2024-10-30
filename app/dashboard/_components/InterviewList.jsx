@@ -41,7 +41,7 @@ function InterviewList() {
                     interviewList.map((interview, index) => (
                         <InterviewItemCard
                             interview={interview}
-                            key={index}
+                            key={index} // index
                             onDelete={deleteInterview} // Pass the delete function
                         />
                     ))
